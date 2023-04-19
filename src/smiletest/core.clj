@@ -103,13 +103,12 @@
 ;;error
 ;;(deflerper ->rbf     RBFInterpolation2D)
 
-;;bleh! just compute bounds here maybe but then would need to pipe through...
 (defn lerped [f & {:keys [knowns bounds] :or {knowns (fn [_] nil)}}]
-  (vec (for [
-             x (range 0 17)
-             y (range 0 16)]
-         [x y (or (knowns [x y])
-                  (f x y))])))
+  (let [{:keys [ymax ymin xmax xmin]} bounds]
+    (vec (for [x (range xmin xmax)
+               y (range ymin ymax)]
+           [x y (or (knowns [x y])
+                    (f x y))]))))
 
 (defn assess [x]
   (cond (>= x 0.95) 3
@@ -137,7 +136,9 @@
         {:keys [ymax ymin xmax xmin] :or
          ;;Set the bounds of interpolation to be the max and mins
          {ymax (reduce max ys) ymin (reduce min ys)
-          xmax (reduce max xs) xmin (reduce min xs)} :as bs} bounds
+          xmax (reduce max xs) xmin (reduce min xs)}}
+        bounds
+        bs {:ymax (inc ymax) :ymin ymin :xmax (inc xmax) :xmin xmin}
         points (map (fn [x y z] [(mapv long [x y]) z]) xs ys zs)]
     (new-points (lerper xs ys zs)
                 :knowns (into {[0 0] 0} points)
